@@ -1,0 +1,147 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+df = pd.read_csv("C:\ML L\loan_approval_dataset1.csv")
+
+
+print(df.head())
+print(df.info())
+print(df.shape)
+print(df.columns)
+
+df.columns = df.columns.str.strip()
+
+df['loan_to_income_ratio'] = df['loan_amount']/ df['income_annum']
+
+sns.boxplot(x ="loan_status",y = "cibil_score",data = df)
+plt.title("Loan statuus vs Cibil score")
+plt.show()
+
+df.groupby('loan_status')['cibil_score'].describe() 
+
+
+print("\n High cibil score yet rejected")
+print(df[(df['cibil_score']>700) & (df['loan_status'] == "Rejected")].shape[0])
+
+print("\n Approved with low cibil score ")
+print(df[(df['cibil_score']<500) & (df['loan_status']=='Approved')].shape[0])
+
+df = df.drop('loan_id',axis = 1) 
+
+df.columns
+
+df.head(2)
+
+from sklearn.preprocessing import LabelEncoder
+le = LabelEncoder()
+df['education'] = le.fit_transform(df['education'])
+df['self_employed'] = le.fit_transform(df['self_employed'])
+df['loan_status'] = le.fit_transform(df['loan_status'])
+
+from sklearn.model_selection import train_test_split 
+
+
+X = df.drop("loan_status",axis =1)
+y = df['loan_status']
+
+X_train,X_test,y_train,y_test = train_test_split(X,y,test_size = 0.2,random_state = 42) 
+
+print(X_train.shape)
+print(X_test.shape)
+print(y_train.shape)
+print(y_test.shape)
+
+print("X columns:",X.columns)
+
+X.isnull().sum()
+
+y_train.isnull().sum()
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score,classification_report,confusion_matrix
+
+model = LogisticRegression(max_iter=1000)
+model.fit(X_train,y_train)
+
+print(df['loan_status'].value_counts())
+
+y_pred = model.predict(X_test)
+
+print("Accuracy score :", accuracy_score(y_test,y_pred))
+print("Classification report :\n",classification_report(y_test,y_pred,target_names = ["Rejected",
+                                                                                      "Approved"]))
+
+print("Confusion matrix:",confusion_matrix(y_test,y_pred))
+
+df['loan_status'] = 1 - df["loan_status"]
+print(df['loan_status'].value_counts())
+
+
+from sklearn.tree import DecisionTreeClassifier
+
+
+dt = DecisionTreeClassifier(random_state=42)
+dt.fit(X_train,y_train)
+
+
+y_pred = dt.predict(X_test)
+
+
+print("Decision tree accuracy:",accuracy_score(y_test,y_pred))
+print(confusion_matrix(y_test,y_pred))
+print(classification_report(y_test,y_pred,target_names=['Rejected','Approved']))
+
+
+train_acc = accuracy_score(y_train,dt.predict(X_train))
+test_acc = accuracy_score(y_test,dt.predict(X_test))
+print("Train accuracy:",train_acc)
+print("Test accuracy:",test_acc)
+
+print("tree depth:",dt.get_depth())
+print("Leaves:",dt.get_n_leaves())
+
+from sklearn.tree import plot_tree
+
+
+plt.figure(figsize=(22,10))
+plot_tree(dt,filled=True,feature_names=X.columns.tolist(),
+class_names=['Rejected','Approved'],
+fontsize = 10)
+plt.show()
+
+plt.figure(figsize=(22,10))
+plot_tree(dt,filled=True,feature_names=X.columns.tolist(),
+class_names=['Rejected','Approved'],
+fontsize = 10,max_depth =4)
+plt.show()
+
+
+from sklearn.ensemble import RandomForestClassifier
+
+
+rf = RandomForestClassifier(n_estimators=200,random_state=42,max_depth = 10)
+rf.fit(X_train,y_train)
+
+y_pred_rf = rf.predict(X_test)
+
+print("Decision tree accuracy:",accuracy_score(y_test,y_pred_rf))
+print(confusion_matrix(y_test,y_pred_rf))
+print(classification_report(y_test,y_pred_rf,target_names=['Rejected','Approved']))
+
+
+single_tree = rf.estimators_[0]
+plt.figure(figsize=(22,10))
+plot_tree(single_tree,filled=True,feature_names=X.columns.tolist(),
+class_names=['Rejected','Approved'],
+fontsize = 10)
+plt.show()
+
+single_tree = rf.estimators_[0]
+plt.figure(figsize=(22,10))
+plot_tree(single_tree,filled=True,feature_names=X.columns.tolist(),
+class_names=['Rejected','Approved'],
+fontsize = 10,max_depth = 3)
+plt.show()
+
